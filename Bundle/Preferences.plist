@@ -58,16 +58,50 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<string>NO</string>
+			<key>defaults</key>
+			<string>com.jakewalk.lockinfo.ThingsPlugin</string>
+			<key>key</key>
+			<string>HideNoDate</string>
+			<key>label</key>
+			<string>Hide Undated Tasks</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>default</key>
+			<string>0</string>
+			<key>defaults</key>
+			<string>com.jakewalk.lockinfo.ThingsPlugin</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>key</key>
+			<string>tasksOrder</string>
+			<key>label</key>
+			<string>Sort Tasks</string>
+			<key>validTitles</key>
+			<array>
+				<string>Dated On Top – Newest first</string>
+				<string>Dated On Top – Oldest first</string>
+				<string>Undated On Top - Newest first</string>
+				<string>Undated On Top - Oldest first</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<string>0</string>
+				<string>1</string>
+				<string>2</string>
+				<string>3</string>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>isStaticText</key>
 			<true/>
-		</dict>	
-		<dict>
-			<key>cell</key>
-			<string>PSTitleValueCell</string>
-			<key>label</key>
-			<string>Things plugin currently shows only today tasks which have a due date.</string>
-		</dict>				
+		</dict>
 	</array>
 	<key>title</key>
 	<string>Things</string>
