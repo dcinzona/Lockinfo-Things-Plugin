@@ -1,4 +1,5 @@
 {
-"%d days overdue"="%d Tage überfällig";
-"Things"="Things - Heute";
+" (%d days overdue)"=" (%d Tage überfällig)";
+"Things"="Things";
+"No Due Date"="Kein Fälligkeitsdatum";
 }
