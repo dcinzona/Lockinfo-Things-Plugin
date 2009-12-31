@@ -129,12 +129,15 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 	v.name.style = tableView.theme.summaryStyle;
 	v.due.style = tableView.theme.detailStyle;
 	
+	//NSLog(@"LI:Things: todoList %@", self.todoList);
+	
 	NSDictionary* elem = [self.todoList objectAtIndex:indexPath.row];
+		
 	v.name.text = [elem objectForKey:@"name"];
 
-	BOOL ind = true;
-	if (NSNumber* b = [self.todoPrefs objectForKey:@"ShowListColors"])
-		ind = b.boolValue;
+//	BOOL ind = true;
+//	if (NSNumber* b = [self.todoPrefs objectForKey:@"ShowListColors"])
+//		ind = b.boolValue;
 
 //	if (ind)
 //	{
@@ -152,13 +155,14 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 //	}
 		
 	NSNumber* dateNum = [elem objectForKey:@"due"];
-	if (dateNum.doubleValue == nil)
-	{
+	NSLog(@"LI:Things: Datum: %d", dateNum.doubleValue);
+	if ((dateNum.doubleValue == nil))	{
 		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
 		v.due.text = localize(bundle, @"No Due Date");
 	}
 	else
 	{
+		UIColor* color;
 		NSDate* date = [[[NSDate alloc] initWithTimeIntervalSinceReferenceDate:dateNum.doubleValue] autorelease];
 		
 		int secondsDifference = (int) [date timeIntervalSinceNow];
@@ -168,10 +172,13 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 		df.dateFormat = (NSString*)UIDateFormatStringForFormatType(CFSTR("UIWeekdayNoYearDateFormat"));
 		
 		if (days < 0){
-			NSString *overdueDays = [NSString stringWithFormat:@" (%d days overdue)", (days*(-1))];
+			NSBundle* bundle = [NSBundle bundleForClass:[self class]];
+			v.due.text = localize(bundle, @" (%d days overdue)");
+			//NSLog(@"LI:Things: Overdue-Text: %@", v.due.text);
+			NSString *overdueDays = [NSString stringWithFormat: v.due.text, (days*(-1))];
 			v.due.text = [[df stringFromDate:date] stringByAppendingString: overdueDays];
 			
-			UIColor* color = [UIColor colorWithRed:255
+			color = [UIColor colorWithRed:255
 						green:0
 						blue:0
 						alpha:1];
@@ -180,6 +187,13 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 			[v.dot setNeedsDisplay];			
 		}
 		else
+			color = [UIColor colorWithRed:0
+											 green:255
+											  blue:0
+											 alpha:1];
+			v.dot.color = color;
+			v.dot.hidden = false;
+			[v.dot setNeedsDisplay];
 			v.due.text = [df stringFromDate:date];
 	}
 	
@@ -212,13 +226,27 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 	}
 
 	self.todoPrefs = [NSDictionary dictionaryWithContentsOfFile:self.prefsPath];
+	
 	NSLog(@"LI:Things: Prefs: %@: %@", self.prefsPath, self.todoPrefs);
 	
-	//Appigo:	
-	//NSString *allSql = @"select tasks.name, tasks.due_date, tasks.priority, lists.color from tasks left outer join lists on lists.pk = tasks.list where tasks.completion_date < 0 and tasks.deleted = 0";
 	
-	//Today tasks
-	NSString *allSql = @"select title,dueDate from Task as t1 where status = 1 and type = 2 and flagged = 1 and dueDate IS NOT NULL";
+	//Today tasks Things
+	BOOL hideNoDate = true;
+	if (NSNumber *n = [self.plugin.preferences valueForKey:@"HideNoDate"]) {
+		hideNoDate = n.intValue;
+	}
+	//NSLog(@"LI:Things: HideNoDate %d", hideNoDate);
+	
+	NSString *allSql;
+	if (hideNoDate) {
+		allSql = @"select title,dueDate,createdDate from Task as t1 where status = 1 and type = 2 and flagged = 1 and dueDate IS NOT NULL";
+	}
+	else {
+		allSql = @"select title,dueDate,createdDate from Task as t1 where status = 1 and type = 2 and flagged = 1";
+	}
+
+	//NSLog(@"LI:Things: allSQL %@", allSql);
+	
 		
 	//BOOL hideUnfiled = false;
 	//if (NSNumber* n = [self.plugin.preferences valueForKey:@"HideUnfiled"])
@@ -236,28 +264,58 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 	//if (dayLimit)
 	//	allSql = [NSString stringWithFormat:@"%@ and (tasks.due_date < date('now', '+%i day') or tasks.due_date = 64092211200)", allSql, maxDays];
 		
-	//BOOL hideSubItems = true;
-	//if (NSNumber* n = [self.plugin.preferences valueForKey:@"hideSubItems"])
-	//	hideSubItems = n.boolValue;
-	//if (hideSubItems)
-	//	allSql = [allSql stringByAppendingString:@" and tasks.parent = 0"];
-		
-	//BOOL hideNoDate = false;
-	//if (NSNumber* n = [self.plugin.preferences valueForKey:@"HideNoDate"])
-	//	hideNoDate = n.boolValue;
-
+	
+	
 	//if (hideNoDate)
 	//	allSql = [allSql stringByAppendingString:@" and tasks.due_date <> 64092211200"];
+	
+		
+	
+	NSNumber *tasksOrder;
+	if (NSNumber *n = [self.plugin.preferences valueForKey:@"tasksOrder"]) {
+		tasksOrder = n;
+	}
+	
+	
+	NSString *tasksOrderSql;
+	
+	switch (tasksOrder.intValue) {
+		case 0:
+			tasksOrderSql = @"dueDate DESC";
+			break;
+		case 1:
+			tasksOrderSql = @"IFNULL(dueDate, '2030-01-01') ASC";
+			break;
+		case 2:
+			tasksOrderSql = @"IFNULL(dueDate, '2030-01-01') DESC";
+			break;
+		case 3:
+			tasksOrderSql = @"dueDate ASC";
+			break;
+		default:
+			tasksOrderSql = @"dueDate DESC";
+			break;
+	}
+	
 
+	
+	//NSLog(@"LI:Things: orderDatedTasks %@", orderDatedTasks);
+	NSLog(@"LI:Things: tasksOrder %i", tasksOrder);
+	NSLog(@"LI:Things: tasksOrderSql %@", tasksOrderSql);
+	
+	
 	int queryLimit = 5;
 	if (NSNumber* n = [self.plugin.preferences valueForKey:@"MaxTasks"])
 		queryLimit = n.intValue;
 
-	NSString* sql = [NSString stringWithFormat:@"%@ order by dueDate ASC limit %i", allSql, queryLimit];
+	NSString* sql = [NSString stringWithFormat:@"%@ ORDER BY %@, createdDate DESC limit %i;", allSql, tasksOrderSql, queryLimit];
+	
+	//NSString* sql = [NSString stringWithFormat:@"%@ ORDER BY %@ %@, createdDate %@ limit %i;", allSql, tasksOrder, orderDatedTasks, orderUndatedTasks, queryLimit];
+	
 	NSLog(@"LI:Things: Executing SQL: %@", sql);
 			
 	/* Get the todo database timestamp */
-	NSFileManager* fm = [NSFileManager defaultManager];
+	//NSFileManager* fm = [NSFileManager defaultManager];
 	NSDictionary *dataFileAttributes = [[NSFileManager defaultManager] fileAttributesAtPath:self.dbPath traverseLink:YES];
 	NSDate* lastDataModified = [dataFileAttributes objectForKey:NSFileModificationDate];
 	
@@ -300,7 +358,7 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 					NSString *aText = [NSString stringWithUTF8String:(cText == NULL ? "" : cText)];
 					NSString *color = (cColor == NULL ? [self.todoPrefs objectForKey:@"UnfiledTaskListColor"] : [NSString stringWithUTF8String:cColor]);
 					NSArray* colorComps = [color componentsSeparatedByString:@":"];
-							
+										
 					NSDictionary *todoDict = [NSDictionary dictionaryWithObjectsAndKeys:
 						aText, @"name",
 						[NSNumber numberWithDouble:cDue], @"due",
