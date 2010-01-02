@@ -45,6 +45,7 @@ static SBApplication* getApp()
 }
 @end
 
+
 @interface ThingsView : UIView
 
 @property (nonatomic, retain) DotView* dot;
@@ -58,7 +59,6 @@ static SBApplication* getApp()
 
 @synthesize dot, due, name, priority;
 
-@end
 
 static ThingsView* createView(CGRect frame, LITableView* table)
 {
@@ -87,6 +87,41 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 	return v;
 }
 
+@end
+
+
+
+
+@interface ThingsViewHeader : UIView
+
+@property (nonatomic, retain) LILabel* name;
+
+@end
+
+@implementation ThingsViewHeader
+
+@synthesize name;
+
+static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
+{
+	ThingsViewHeader* h = [[[ThingsViewHeader alloc] initWithFrame:frame] autorelease];
+	
+	NSBundle* b = [NSBundle bundleWithPath:@"/Library/LockInfo/"];
+	NSString* path = [b pathForResource:@"section_subheader" ofType:@"png"];
+	UIImage* image = [UIImage imageWithContentsOfFile:path];
+	h.backgroundColor = [UIColor colorWithPatternImage:image];
+	
+	h.name = [table labelWithFrame:CGRectZero];
+	h.name.frame = CGRectMake(22, 0, 275, 16);
+	h.name.backgroundColor = [UIColor clearColor];
+	
+	[h addSubview:h.name];
+	
+	return h;
+}
+
+@end
+
 
 @interface ThingsPlugin : NSObject <LIPluginController, LITableViewDelegate, UITableViewDataSource> 
 {
@@ -107,33 +142,47 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 
 @synthesize todoList, todoPrefs, sql, plugin, prefsPath, dbPath;
 
+
+
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section 
 {
-	return self.todoList.count;
+	return self.todoList.count+1;
 }
 
 - (UITableViewCell *)tableView:(LITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath 
 {
-	UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TodoCell"];
+	NSUInteger row = [indexPath row];
+
+	//NSLog(@"LI:Things: row %i", row);
 	
-	if (cell == nil) {
-		cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"TodoCell"] autorelease];
-		//cell.backgroundColor = [UIColor clearColor];
 		
-		ThingsView* v = createView(CGRectMake(0, 0, 320, 35), tableView);
-		v.tag = 57;
-		[cell.contentView addSubview:v];
-	}
-	
-	ThingsView* v = [cell.contentView viewWithTag:57];
-	v.name.style = tableView.theme.summaryStyle;
-	v.due.style = tableView.theme.detailStyle;
-	
-	//NSLog(@"LI:Things: todoList %@", self.todoList);
-	
-	NSDictionary* elem = [self.todoList objectAtIndex:indexPath.row];
+	if (row != 0) {
+		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TodoCell"];
+		if (cell == nil) {
+			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"TodoCell"] autorelease];
+			
+			
+			//Todo: avoid setting negative y-value
+			ThingsView* v = createView(CGRectMake(0, 0, 320, 30), tableView);
 		
-	v.name.text = [elem objectForKey:@"name"];
+			v.tag = 57;
+		
+			[cell.contentView addSubview:v];
+		}
+	
+		ThingsView* v = [cell.contentView viewWithTag:57];
+	
+		v.name.style = tableView.theme.summaryStyle;
+		v.due.style = tableView.theme.detailStyle;
+	
+	
+		//NSLog(@"LI:Things: todoList %@", self.todoList);
+		
+		NSUInteger rowdict = row-1;
+		
+		NSDictionary* elem = [self.todoList objectAtIndex:rowdict];
+		
+		v.name.text = [elem objectForKey:@"name"];
 
 //	BOOL ind = true;
 //	if (NSNumber* b = [self.todoPrefs objectForKey:@"ShowListColors"])
@@ -155,7 +204,6 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 //	}
 		
 	NSNumber* dateNum = [elem objectForKey:@"due"];
-	NSLog(@"LI:Things: Datum: %d", dateNum.doubleValue);
 	if ((dateNum.doubleValue == nil))	{
 		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
 		v.due.text = localize(bundle, @"No Due Date");
@@ -174,7 +222,7 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 		if (days < 0){
 			NSBundle* bundle = [NSBundle bundleForClass:[self class]];
 			v.due.text = localize(bundle, @" (%d days overdue)");
-			//NSLog(@"LI:Things: Overdue-Text: %@", v.due.text);
+			
 			NSString *overdueDays = [NSString stringWithFormat: v.due.text, (days*(-1))];
 			v.due.text = [[df stringFromDate:date] stringByAppendingString: overdueDays];
 			
@@ -198,6 +246,27 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 	}
 	
 	return cell;
+	}
+	else {
+		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TodoSection"];
+		if (cell == nil) {
+			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"TodoSection"] autorelease];
+			ThingsViewHeader* v = createHeaderView(CGRectMake(0, 0, 320, 20), tableView);
+			
+			v.tag = 56;
+			
+			[cell.contentView addSubview:v];
+		}
+		
+		ThingsViewHeader* v = [cell.contentView viewWithTag:56];
+		
+		v.name.style = tableView.theme.summaryStyle;
+		v.name.textAlignment = UITextAlignmentCenter;
+		v.name.text = @"Heute";
+		
+		return cell;
+	}
+	
 }
 
 - (id) initWithPlugin:(LIPlugin*) plugin
@@ -247,29 +316,6 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 
 	//NSLog(@"LI:Things: allSQL %@", allSql);
 	
-		
-	//BOOL hideUnfiled = false;
-	//if (NSNumber* n = [self.plugin.preferences valueForKey:@"HideUnfiled"])
-	//		hideUnfiled = n.boolValue;
-
-	//if (hideUnfiled)
-	//	allSql = [allSql stringByAppendingString:@" and tasks.list <> 0"];
-	
-	//BOOL dayLimit = true;
-	//int maxDays = 7;
-	//if (NSNumber* n = [self.plugin.preferences valueForKey:@"dayLimit"])
-	//	dayLimit = n.boolValue;
-	//if (NSNumber* n = [self.plugin.preferences valueForKey:@"maxDays"])
-	//	maxDays = n.intValue;
-	//if (dayLimit)
-	//	allSql = [NSString stringWithFormat:@"%@ and (tasks.due_date < date('now', '+%i day') or tasks.due_date = 64092211200)", allSql, maxDays];
-		
-	
-	
-	//if (hideNoDate)
-	//	allSql = [allSql stringByAppendingString:@" and tasks.due_date <> 64092211200"];
-	
-		
 	
 	NSNumber *tasksOrder;
 	if (NSNumber *n = [self.plugin.preferences valueForKey:@"tasksOrder"]) {
@@ -310,7 +356,6 @@ static ThingsView* createView(CGRect frame, LITableView* table)
 
 	NSString* sql = [NSString stringWithFormat:@"%@ ORDER BY %@, createdDate DESC limit %i;", allSql, tasksOrderSql, queryLimit];
 	
-	//NSString* sql = [NSString stringWithFormat:@"%@ ORDER BY %@ %@, createdDate %@ limit %i;", allSql, tasksOrder, orderDatedTasks, orderUndatedTasks, queryLimit];
 	
 	NSLog(@"LI:Things: Executing SQL: %@", sql);
 			
