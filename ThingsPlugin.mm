@@ -112,7 +112,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	h.backgroundColor = [UIColor colorWithPatternImage:image];
 	
 	h.name = [table labelWithFrame:CGRectZero];
-	h.name.frame = CGRectMake(22, 0, 275, 16);
+	h.name.frame = CGRectMake(0, 0, 320, 17);
 	h.name.backgroundColor = [UIColor clearColor];
 	
 	[h addSubview:h.name];
@@ -153,13 +153,60 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 {
 	NSUInteger row = [indexPath row];
 
+//	NSUInteger countDueTasks=0;
+	
+//	NSLog(@"LI:Things: countDueTasks %i", countDueTasks);
+	
 	//NSLog(@"LI:Things: row %i", row);
 	
+	//NSLog(@"LI:Things: todoList Array %@", self.todoList);
+	
+	
+	
+//	NSUInteger rowdict = row;
+//	NSDictionary* elem = [self.todoList objectAtIndex:rowdict];
 		
-	if (row != 0) {
-		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TodoCell"];
+//	NSNumber* dateNum = [elem objectForKey:@"due"];
+//	if ((dateNum.doubleValue != nil))	{
+//		countDueTasks++;
+//	}
+	
+//	NSLog(@"LI:Things: countDueTasks %i", countDueTasks);
+		
+	int todayRow = 0;
+//	int dueRow = countDueTasks+2;
+	
+	if (row == todayRow) {
+		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:nil];
 		if (cell == nil) {
-			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"TodoCell"] autorelease];
+			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:nil] autorelease];
+			ThingsViewHeader* v = createHeaderView(CGRectMake(0, 0, 320, 20), tableView);
+			
+			v.tag = 56;
+			
+			[cell.contentView addSubview:v];
+		}
+		
+		ThingsViewHeader* v = [cell.contentView viewWithTag:56];
+		
+		v.name.style = tableView.theme.summaryStyle;
+		v.name.textAlignment = UITextAlignmentCenter;
+		
+		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
+		
+		if (row == todayRow)
+			v.name.text = localize(bundle, @"Today");
+//		if (row == dueRow)
+//			v.name.text = localize(bundle, @"Due");
+		
+		return cell;
+	}
+		
+		
+	if (row != todayRow) {
+		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TodoCellToday"];
+		if (cell == nil) {
+			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"TodoCellToday"] autorelease];
 			
 			
 			//Todo: avoid setting negative y-value
@@ -184,24 +231,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		
 		v.name.text = [elem objectForKey:@"name"];
 
-//	BOOL ind = true;
-//	if (NSNumber* b = [self.todoPrefs objectForKey:@"ShowListColors"])
-//		ind = b.boolValue;
-
-//	if (ind)
-//	{
-//		UIColor* color = [UIColor colorWithRed:[[elem objectForKey:@"color_r"] doubleValue]
-//					green:[[elem objectForKey:@"color_g"] doubleValue]
-//					blue:[[elem objectForKey:@"color_b"] doubleValue]
-//					alpha:1];
-//		v.dot.color = color;
-//		v.dot.hidden = false;
-//		[v.dot setNeedsDisplay];
-//	}
-//	else
-//	{
 		v.dot.hidden = true;
-//	}
 		
 	NSNumber* dateNum = [elem objectForKey:@"due"];
 	if ((dateNum.doubleValue == nil))	{
@@ -247,29 +277,11 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	
 	return cell;
 	}
-	else {
-		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TodoSection"];
-		if (cell == nil) {
-			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"TodoSection"] autorelease];
-			ThingsViewHeader* v = createHeaderView(CGRectMake(0, 0, 320, 20), tableView);
-			
-			v.tag = 56;
-			
-			[cell.contentView addSubview:v];
-		}
-		
-		ThingsViewHeader* v = [cell.contentView viewWithTag:56];
-		
-		v.name.style = tableView.theme.summaryStyle;
-		v.name.textAlignment = UITextAlignmentCenter;
-		
-		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
-		v.name.text = localize(bundle, @"Today");
-		
-		return cell;
-	}
 	
 }
+
+
+
 
 - (id) initWithPlugin:(LIPlugin*) plugin
 {
@@ -298,7 +310,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 
 	self.todoPrefs = [NSDictionary dictionaryWithContentsOfFile:self.prefsPath];
 	
-	NSLog(@"LI:Things: Prefs: %@: %@", self.prefsPath, self.todoPrefs);
+	//NSLog(@"LI:Things: Prefs: %@: %@", self.prefsPath, self.todoPrefs);
 	
 	
 	//Today tasks Things
@@ -310,10 +322,10 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	
 	NSString *allSql;
 	if (hideNoDate) {
-		allSql = @"select title,dueDate,createdDate from Task as t1 where status = 1 and type = 2 and flagged = 1 and dueDate IS NOT NULL";
+		allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2 and flagged = 1 and dueDate IS NOT NULL";
 	}
 	else {
-		allSql = @"select title,dueDate,createdDate from Task as t1 where status = 1 and type = 2 and flagged = 1";
+		allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2 and flagged = 1";
 	}
 
 	//NSLog(@"LI:Things: allSQL %@", allSql);
@@ -323,6 +335,10 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	if (NSNumber *n = [self.plugin.preferences valueForKey:@"tasksOrder"]) {
 		tasksOrder = n;
 	}
+	else {
+		tasksOrder = 0;
+	}
+
 	
 	
 	NSString *tasksOrderSql;
@@ -399,20 +415,21 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 				{
 					const char *cText = (const char*)sqlite3_column_text(compiledStatement, 0);
 					double cDue  = sqlite3_column_double(compiledStatement, 1);
-					int priority  = sqlite3_column_int(compiledStatement, 2);
-					const char* cColor  = (const char*)sqlite3_column_text(compiledStatement, 3);
+					double createdDate  = sqlite3_column_double(compiledStatement, 2);
+					double flagged  = sqlite3_column_double(compiledStatement, 3);
 							
 					NSString *aText = [NSString stringWithUTF8String:(cText == NULL ? "" : cText)];
-					NSString *color = (cColor == NULL ? [self.todoPrefs objectForKey:@"UnfiledTaskListColor"] : [NSString stringWithUTF8String:cColor]);
-					NSArray* colorComps = [color componentsSeparatedByString:@":"];
+					//NSString *color = (cColor == NULL ? [self.todoPrefs objectForKey:@"UnfiledTaskListColor"] : [NSString stringWithUTF8String:cColor]);
+					//NSArray* colorComps = [color componentsSeparatedByString:@":"];
 										
 					NSDictionary *todoDict = [NSDictionary dictionaryWithObjectsAndKeys:
 						aText, @"name",
 						[NSNumber numberWithDouble:cDue], @"due",
-						[NSNumber numberWithInt:priority], @"priority", 
-						[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:0] doubleValue] : 0)], @"color_r",
-						[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:1] doubleValue] : 0)], @"color_g",
-						[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:2] doubleValue] : 0)], @"color_b",
+						[NSNumber numberWithDouble:createdDate], @"createdDate", 
+						[NSNumber numberWithDouble:flagged], @"flagged",
+						//[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:0] doubleValue] : 0)], @"color_r",
+						//[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:1] doubleValue] : 0)], @"color_g",
+						//[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:2] doubleValue] : 0)], @"color_b",
 						nil];
 				
 					[todos addObject:todoDict];
