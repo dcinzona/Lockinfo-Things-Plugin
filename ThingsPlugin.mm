@@ -262,7 +262,9 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		
 		v.name.style = tableView.theme.summaryStyle;
 		v.name.textAlignment = UITextAlignmentCenter;
-		v.name.text = @"Heute";
+		
+		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
+		v.name.text = localize(bundle, @"Today");
 		
 		return cell;
 	}
