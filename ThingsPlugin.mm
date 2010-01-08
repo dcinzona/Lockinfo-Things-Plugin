@@ -131,7 +131,9 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 
 @property (nonatomic, retain) LIPlugin* plugin;
 @property (retain) NSDictionary* todoPrefs;
-@property (retain) NSArray* todoList;
+@property (retain) NSArray* todoListToday;
+@property (retain) NSArray* todoListDue;
+@property (retain) NSArray* todoListNext;
 
 @property (retain) NSString* sql;
 @property (retain) NSString* prefsPath;
@@ -141,25 +143,44 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 
 @implementation ThingsPlugin
 
-@synthesize todoList, todoPrefs, sql, plugin, prefsPath, dbPath;
+@synthesize todoListToday, todoListDue, todoListNext, todoPrefs, sql, plugin, prefsPath, dbPath;
 
 
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section 
 {
-	int todoListCount = self.todoList.count;
-	if (todoListCount != 0) {
-		return todoListCount+1;
-	}
-	else {
-		return todoListCount;
-	}
-
+	//int todoListDueCount = self.todoListDue.count;
+	//NSLog(@"LI:Things: todoListDue.count %i", todoListDueCount);
+	
+	
+	//NSDictionary* elem = [self.todoListDue objectAtIndex:0];
+	//NSLog(@"LI:Things: todoListDue item %@", [elem objectForKey:@"name"]);
+	
+	
+	int todoListCount = (self.todoListToday.count + self.todoListDue.count + self.todoListNext.count);
+	
+	if (self.todoListToday.count != 0)
+		todoListCount = todoListCount+1;
+	
+	if (self.todoListDue.count != 0)
+		todoListCount = todoListCount+1;
+	
+	if (self.todoListNext.count != 0)
+		todoListCount = todoListCount+1;
+	
+	NSLog(@"LI:Things: todoListCount: %i", todoListCount);
+		
+	return todoListCount;
 }
 
 - (CGFloat)tableView:(LITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-	if (indexPath.row == 0) {
+	int row = [indexPath row];
+	int todayRow = 0;
+	int dueRow = self.todoListToday.count+1;
+	int nextRow = dueRow + self.todoListDue.count+1;
+	
+	if (row == todayRow || row == dueRow || row == nextRow) {
 		return 20;	
 	}
 	else {
@@ -170,32 +191,19 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 
 - (UITableViewCell *)tableView:(LITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath 
 {
-	NSUInteger row = [indexPath row];
+	int row = [indexPath row];
 
-//	NSUInteger countDueTasks=0;
-	
-//	NSLog(@"LI:Things: countDueTasks %i", countDueTasks);
-	
-	//NSLog(@"LI:Things: row %i", row);
+	NSLog(@"LI:Things: row %i", row);
 	
 	//NSLog(@"LI:Things: todoList Array %@", self.todoList);
 	
-	
-	
-//	NSUInteger rowdict = row;
-//	NSDictionary* elem = [self.todoList objectAtIndex:rowdict];
-		
-//	NSNumber* dateNum = [elem objectForKey:@"due"];
-//	if ((dateNum.doubleValue != nil))	{
-//		countDueTasks++;
-//	}
-	
-//	NSLog(@"LI:Things: countDueTasks %i", countDueTasks);
-		
 	int todayRow = 0;
-//	int dueRow = countDueTasks+2;
+	int dueRow = self.todoListToday.count+1;
+	int nextRow = dueRow + self.todoListDue.count+1;
 	
-	if (row == todayRow) {
+	
+	//Subsection Headers
+	if (row == todayRow || row == dueRow || row == nextRow) {
 		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:nil];
 		if (cell == nil) {
 			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:nil] autorelease];
@@ -216,20 +224,21 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		
 		if (row == todayRow)
 			v.name.text = localize(bundle, @"Today");
-//		if (row == dueRow)
-//			v.name.text = localize(bundle, @"Due");
+		
+		if (row == dueRow)
+			v.name.text = localize(bundle, @"Due");
+		
+		if (row == nextRow)
+			v.name.text = localize(bundle, @"Next");
 		
 		return cell;
 	}
-		
-		
-	if (row != todayRow) {
-		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TodoCellToday"];
+	
+	else {
+		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TodoCell"];
 		if (cell == nil) {
-			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"TodoCellToday"] autorelease];
+			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"TodoCell"] autorelease];
 			
-			
-			//Todo: avoid setting negative y-value
 			ThingsView* v = createView(CGRectMake(0, 0, 320, 30), tableView);
 		
 			v.tag = 57;
@@ -242,19 +251,30 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		v.name.style = tableView.theme.summaryStyle;
 		v.due.style = tableView.theme.detailStyle;
 	
-	
-		//NSLog(@"LI:Things: todoList %@", self.todoList);
+		NSDictionary *elem;
+				
+		if ( (row > todayRow) && (row < dueRow) ) {
+			int rowdict = row-1;
+			elem = [self.todoListToday objectAtIndex:rowdict];
+		}
+
 		
-		NSUInteger rowdict = row-1;
+		if (row > dueRow && row < nextRow) {
+			int rowdict = row-dueRow-1;
+			elem = [self.todoListDue objectAtIndex:rowdict];
+		}
 		
-		NSDictionary* elem = [self.todoList objectAtIndex:rowdict];
+		if (row > nextRow) {
+			int rowdict = row-nextRow-1;
+			elem = [self.todoListNext objectAtIndex:rowdict];
+		}
 		
 		v.name.text = [elem objectForKey:@"name"];
 
 		v.dot.hidden = true;
 		
 	NSNumber* dateNum = [elem objectForKey:@"due"];
-	if ((dateNum.doubleValue == nil))	{
+	if ((dateNum.doubleValue == 0))	{
 		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
 		v.due.text = localize(bundle, @"No Due Date");
 	}
@@ -345,7 +365,8 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2 and flagged = 1 and dueDate IS NOT NULL";
 	}
 	else {
-		allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2 and flagged = 1";
+		allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2";
+		//allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2 and flagged = 1";
 	}
 
 	//NSLog(@"LI:Things: allSQL %@", allSql);
@@ -408,7 +429,9 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		self.sql = sql;
 
 		// Update data and read from database
-		NSMutableArray *todos = [NSMutableArray arrayWithCapacity:4];
+		NSMutableArray *todosDue = [NSMutableArray arrayWithCapacity:4];
+		NSMutableArray *todosToday = [NSMutableArray arrayWithCapacity:4];
+		NSMutableArray *todosNext = [NSMutableArray arrayWithCapacity:4];
 		
 		sqlite3 *database = NULL;
 		@try
@@ -446,13 +469,16 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 						aText, @"name",
 						[NSNumber numberWithDouble:cDue], @"due",
 						[NSNumber numberWithDouble:createdDate], @"createdDate", 
-						[NSNumber numberWithDouble:flagged], @"flagged",
-						//[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:0] doubleValue] : 0)], @"color_r",
-						//[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:1] doubleValue] : 0)], @"color_g",
-						//[NSNumber numberWithDouble:(colorComps.count == 4 ? [[colorComps objectAtIndex:2] doubleValue] : 0)], @"color_b",
+						[NSNumber numberWithDouble:flagged], @"flagged", 
 						nil];
 				
-					[todos addObject:todoDict];
+					if (flagged == 1)
+						[todosToday addObject:todoDict];
+					if (cDue != 0)
+						[todosDue addObject:todoDict];
+					if (flagged != 1 && cDue == 0)
+						[todosNext addObject:todoDict];
+					
 				}
 			}
 			@finally
@@ -467,11 +493,17 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 				sqlite3_close(database);
 		}
 	
-		[self performSelectorOnMainThread:@selector(setTodoList:) withObject:todos waitUntilDone:YES];	
+		[self performSelectorOnMainThread:@selector(setTodoListToday:) withObject:todosToday waitUntilDone:YES];	
+		[self performSelectorOnMainThread:@selector(setTodoListDue:) withObject:todosDue waitUntilDone:YES];
+		[self performSelectorOnMainThread:@selector(setTodoListNext:) withObject:todosNext waitUntilDone:YES];
 
 		// Inside on SMS and outside on Weather Info.  This is likely location of SB crash
-		NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:1];
-		[dict setObject:todos forKey:@"todos"];  
+		
+		NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:3];
+		[dict setObject:todosToday forKey:@"todosToday"];  
+		[dict setObject:todosDue forKey:@"todosDue"];
+		[dict setObject:todosNext forKey:@"todosNext"];
+		
 		[[NSNotificationCenter defaultCenter] postNotificationName:LIUpdateViewNotification object:self.plugin userInfo:dict];
 		
 		lastUpdate = lastDataModified.timeIntervalSinceReferenceDate;
