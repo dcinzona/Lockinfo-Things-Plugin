@@ -109,6 +109,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	NSBundle* b = [NSBundle bundleWithPath:@"/Library/LockInfo/"];
 	NSString* path = [b pathForResource:@"section_subheader" ofType:@"png"];
 	UIImage* image = [UIImage imageWithContentsOfFile:path];
+	
 	h.backgroundColor = [UIColor colorWithPatternImage:image];
 	
 	h.name = [table labelWithFrame:CGRectZero];
@@ -147,6 +148,17 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section 
 {
 	return self.todoList.count+1;
+}
+
+- (CGFloat)tableView:(LITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	if (indexPath.row == 0) {
+		return 20;	
+	}
+	else {
+		return 30;
+	}
+
 }
 
 - (UITableViewCell *)tableView:(LITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath 
@@ -192,6 +204,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		v.name.style = tableView.theme.summaryStyle;
 		v.name.textAlignment = UITextAlignmentCenter;
 		
+		//Localize Subsection-Header Text
 		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
 		
 		if (row == todayRow)
