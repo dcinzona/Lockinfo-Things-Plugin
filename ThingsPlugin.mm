@@ -147,7 +147,14 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section 
 {
-	return self.todoList.count+1;
+	int todoListCount = self.todoList.count;
+	if (todoListCount != 0) {
+		return todoListCount+1;
+	}
+	else {
+		return todoListCount;
+	}
+
 }
 
 - (CGFloat)tableView:(LITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
