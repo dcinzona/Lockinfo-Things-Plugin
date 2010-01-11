@@ -3,4 +3,6 @@
 "Things"="Things";
 "No Due Date"="Kein Fälligkeitsdatum";
 "Today"="Heute";
+"Due" = "Fällig";
+"Next" = "Als Nächstes";
 }
