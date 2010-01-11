@@ -43,6 +43,7 @@
 				<string>10</string>
 				<string>15</string>
 				<string>20</string>
+				<string>All</string>
 			</array>
 			<key>validValues</key>
 			<array>
@@ -54,19 +55,32 @@
 				<string>10</string>
 				<string>15</string>
 				<string>20</string>
+				<string>999</string>
 			</array>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
 			<key>default</key>
-			<string>NO</string>
+			<string>YES</string>
 			<key>defaults</key>
 			<string>com.jakewalk.lockinfo.ThingsPlugin</string>
 			<key>key</key>
-			<string>HideNoDate</string>
+			<string>ShowNoDate</string>
 			<key>label</key>
-			<string>Hide Undated Tasks</string>
+			<string>Show Undated Tasks</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<string>YES</string>
+			<key>defaults</key>
+			<string>com.jakewalk.lockinfo.ThingsPlugin</string>
+			<key>key</key>
+			<string>ShowNext</string>
+			<key>label</key>
+			<string>Show Next Tasks</string>
 		</dict>
 		<dict>
 			<key>cell</key>
