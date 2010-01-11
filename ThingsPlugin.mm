@@ -12,6 +12,8 @@ extern "C" CFStringRef UIDateFormatStringForFormatType(CFStringRef type);
 #define localize(bundle, str) \
 	[bundle localizedStringForKey:str value:str table:nil]
 
+#define allTrim( object ) [object stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet] ]
+
 static SBApplication* getApp()
 {
 	Class cls = objc_getClass("SBApplicationController");
@@ -21,6 +23,7 @@ static SBApplication* getApp()
 	
 	return app;
 }
+
 
 @interface DotView : UIView
 
@@ -149,24 +152,22 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section 
 {
-	//int todoListDueCount = self.todoListDue.count;
-	//NSLog(@"LI:Things: todoListDue.count %i", todoListDueCount);
-	
-	
-	//NSDictionary* elem = [self.todoListDue objectAtIndex:0];
-	//NSLog(@"LI:Things: todoListDue item %@", [elem objectForKey:@"name"]);
-	
-	
 	int todoListCount = (self.todoListToday.count + self.todoListDue.count + self.todoListNext.count);
 	
-	if (self.todoListToday.count != 0)
+	if (self.todoListToday.count > 0) {
+		//self.showTodoListToday == true;
 		todoListCount = todoListCount+1;
+	}
 	
-	if (self.todoListDue.count != 0)
+	if (self.todoListDue.count > 0) {
+		//self.showTodoListDue == true;
 		todoListCount = todoListCount+1;
+	}
 	
-	if (self.todoListNext.count != 0)
+	if (self.todoListNext.count > 0) {
+		//self.showTodoListNext == true;
 		todoListCount = todoListCount+1;
+	}
 	
 	NSLog(@"LI:Things: todoListCount: %i", todoListCount);
 		
@@ -176,15 +177,53 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 - (CGFloat)tableView:(LITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
 	int row = [indexPath row];
-	int todayRow = 0;
-	int dueRow = self.todoListToday.count+1;
-	int nextRow = dueRow + self.todoListDue.count+1;
+	int todayRow, dueRow, nextRow;
+	BOOL showTodoListToday = false, showTodoListDue = false, showTodoListNext = false;
 	
+	NSLog(@"LI:Things: todoList-Counts: Today: %i Due: %i Next: %i", self.todoListToday.count, self.todoListDue.count, self.todoListNext.count);
+	
+	if (self.todoListToday.count > 0)
+		showTodoListToday = true;
+	
+	if (self.todoListDue.count > 0)
+		showTodoListDue = true;
+	
+	if (self.todoListNext.count > 0)
+		showTodoListNext = true;
+	
+	//Determine which subsection to show
+	
+	if (showTodoListToday == false) {
+		todayRow = -1;
+	}
+	else {
+		todayRow = 0;
+	}
+	
+	if (showTodoListDue == false) {
+		dueRow = -1;
+	}
+	else {
+		dueRow = self.todoListToday.count+todayRow+1;
+	}
+	
+	if (showTodoListNext == false) {
+		nextRow = -1;
+	}
+	else if (showTodoListDue == true) {
+		nextRow = dueRow + self.todoListDue.count+1;
+	}
+	else {
+		nextRow = todayRow + self.todoListToday.count + dueRow + self.todoListDue.count+2;
+	}
+
+	NSLog(@"LI:Things: subsection rows: Today: %i Due: %i Next: %i", todayRow, dueRow, nextRow);
+
 	if (row == todayRow || row == dueRow || row == nextRow) {
 		return 20;	
 	}
 	else {
-		return 30;
+		return 35;
 	}
 
 }
@@ -192,18 +231,51 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 - (UITableViewCell *)tableView:(LITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath 
 {
 	int row = [indexPath row];
-
-	NSLog(@"LI:Things: row %i", row);
+	int todayRow, dueRow, nextRow;
+	BOOL showTodoListToday = false, showTodoListDue = false, showTodoListNext = false;
 	
-	//NSLog(@"LI:Things: todoList Array %@", self.todoList);
+	if (self.todoListToday.count > 0)
+		showTodoListToday = true;
 	
-	int todayRow = 0;
-	int dueRow = self.todoListToday.count+1;
-	int nextRow = dueRow + self.todoListDue.count+1;
+	if (self.todoListDue.count > 0)
+		showTodoListDue = true;
+	
+	if (self.todoListNext.count > 0)
+		showTodoListNext = true;
+	
+	//Determine which subsection to show
+	
+	if (showTodoListToday == false) {
+		todayRow = -1;
+	}
+	else {
+		todayRow = 0;
+	}
+	
+	if (showTodoListDue == false) {
+		dueRow = -1;
+	}
+	else {
+		dueRow = self.todoListToday.count+todayRow+1;
+	}
+	
+	if (showTodoListNext == false) {
+		nextRow = -1;
+	}
+	else if (showTodoListDue == true) {
+		nextRow = dueRow + self.todoListDue.count+1;
+	}
+	else {
+		nextRow = todayRow + self.todoListToday.count + dueRow + self.todoListDue.count+2;
+	}
 	
 	
 	//Subsection Headers
-	if (row == todayRow || row == dueRow || row == nextRow) {
+	if ( (row == todayRow && showTodoListToday == true) || 
+		 (row == dueRow && showTodoListDue == true) || 
+		 (row == nextRow && showTodoListNext == true) 
+	   ) {
+		
 		UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:nil];
 		if (cell == nil) {
 			cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:nil] autorelease];
@@ -253,18 +325,18 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	
 		NSDictionary *elem;
 				
-		if ( (row > todayRow) && (row < dueRow) ) {
+		if ( (todayRow != -1) && (row > todayRow) && (row < dueRow) ) {
 			int rowdict = row-1;
 			elem = [self.todoListToday objectAtIndex:rowdict];
 		}
 
 		
-		if (row > dueRow && row < nextRow) {
+		if ( (dueRow != -1) && (row > dueRow) && (row < nextRow) ) {
 			int rowdict = row-dueRow-1;
 			elem = [self.todoListDue objectAtIndex:rowdict];
 		}
 		
-		if (row > nextRow) {
+		if ( (nextRow != -1) && (row > nextRow ) ) {
 			int rowdict = row-nextRow-1;
 			elem = [self.todoListNext objectAtIndex:rowdict];
 		}
@@ -272,16 +344,26 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		v.name.text = [elem objectForKey:@"name"];
 
 		v.dot.hidden = true;
+	
+		//NSLog(@"LI:Things: project %@", [ [elem objectForKey:@"project"] length]);
 		
 	NSNumber* dateNum = [elem objectForKey:@"due"];
+	NSString *project = [elem objectForKey:@"project"];
 	if ((dateNum.doubleValue == 0))	{
-		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
-		v.due.text = localize(bundle, @"No Due Date");
+		if ( [allTrim( project ) length] == 0 ) {
+			NSBundle* bundle = [NSBundle bundleForClass:[self class]];
+			v.due.text = localize(bundle, @"No Due Date");
+		}
+		else {
+			v.due.text = [elem objectForKey:@"project"];
+		}
+
 	}
 	else
 	{
 		UIColor* color;
 		NSDate* date = [[[NSDate alloc] initWithTimeIntervalSinceReferenceDate:dateNum.doubleValue] autorelease];
+		NSString *project = [elem objectForKey:@"project"];
 		
 		int secondsDifference = (int) [date timeIntervalSinceNow];
 		int days = secondsDifference/86400;
@@ -290,9 +372,13 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		df.dateFormat = (NSString*)UIDateFormatStringForFormatType(CFSTR("UIWeekdayNoYearDateFormat"));
 		
 		if (days < 0){
-			NSBundle* bundle = [NSBundle bundleForClass:[self class]];
-			v.due.text = localize(bundle, @" (%d days overdue)");
 			
+			
+			NSBundle* bundle = [NSBundle bundleForClass:[self class]];
+			NSString *overdue = localize(bundle, @" (%d days overdue)");
+			
+			v.due.text = [project stringByAppendingString: overdue];
+						
 			NSString *overdueDays = [NSString stringWithFormat: v.due.text, (days*(-1))];
 			v.due.text = [[df stringFromDate:date] stringByAppendingString: overdueDays];
 			
@@ -312,7 +398,9 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 			v.dot.color = color;
 			v.dot.hidden = false;
 			[v.dot setNeedsDisplay];
-			v.due.text = [df stringFromDate:date];
+			NSString *dueDate = [df stringFromDate:date];
+			v.due.text = [project stringByAppendingString: @": "];
+			v.due.text = [v.due.text stringByAppendingString: dueDate];
 	}
 	
 	return cell;
@@ -353,24 +441,49 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	//NSLog(@"LI:Things: Prefs: %@: %@", self.prefsPath, self.todoPrefs);
 	
 	
-	//Today tasks Things
-	BOOL hideNoDate = true;
-	if (NSNumber *n = [self.plugin.preferences valueForKey:@"HideNoDate"]) {
-		hideNoDate = n.intValue;
-	}
-	//NSLog(@"LI:Things: HideNoDate %d", hideNoDate);
+	//Construct WHERE statement based on Plugin-Preferences
 	
-	NSString *allSql;
-	if (hideNoDate) {
-		allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2 and flagged = 1 and dueDate IS NOT NULL";
+	//Next tasks Things
+	BOOL showNext = true;
+	if (NSNumber *n = [self.plugin.preferences valueForKey:@"ShowNext"]) {
+		showNext = n.intValue;
+	}
+		
+	NSString *showNextTasks;
+	if (showNext == false) {
+		showNextTasks = @"AND (flagged = 1 OR dueDate IS NOT NULL)";
 	}
 	else {
-		allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2";
-		//allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2 and flagged = 1";
+		showNextTasks = @"";
 	}
 
+	NSLog(@"LI:Things: showNextTasks %@", showNextTasks);
+	
+	//Today tasks Things
+	BOOL showDue = true;
+	if (NSNumber *n = [self.plugin.preferences valueForKey:@"ShowDue"]) {
+		showDue = n.intValue;
+	}
+	
+	NSString *showDueTasks;
+	if (showDue == true) {
+		showDueTasks = @"AND dueDate IS NOT NULL";
+	}
+	else {
+		showDueTasks = @"";
+	}
+
+	NSLog(@"LI:Things: showDueTasks %@", showDueTasks);
+	
+	//Construct first part of SQL statement (SELECT, WHERE)
+	NSString* allSql = [NSString stringWithFormat:@"SELECT todos.title as todotitle,todos.dueDate,todos.createdDate,todos.flagged, projects.title as projecttitle FROM Task as todos LEFT OUTER JOIN  Task as projects ON projects.uuid = todos.project WHERE todos.status = 1 AND todos.type = 2 AND todos.focus != '16' %@ %@", showNextTasks, showDueTasks];
+	
+	//allSql = @"select title,dueDate,createdDate,flagged from Task as t1 where status = 1 and type = 2 and flagged = 1";
+	
 	//NSLog(@"LI:Things: allSQL %@", allSql);
 	
+	
+	//Contruct ORDER BY statement based on Plugin-Preferences
 	
 	NSNumber *tasksOrder;
 	if (NSNumber *n = [self.plugin.preferences valueForKey:@"tasksOrder"]) {
@@ -386,19 +499,19 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	
 	switch (tasksOrder.intValue) {
 		case 0:
-			tasksOrderSql = @"dueDate DESC";
+			tasksOrderSql = @"todos.dueDate DESC";
 			break;
 		case 1:
-			tasksOrderSql = @"IFNULL(dueDate, '2030-01-01') ASC";
+			tasksOrderSql = @"IFNULL(todos.dueDate, '2030-01-01') ASC";
 			break;
 		case 2:
-			tasksOrderSql = @"IFNULL(dueDate, '2030-01-01') DESC";
+			tasksOrderSql = @"IFNULL(todos.dueDate, '2030-01-01') DESC";
 			break;
 		case 3:
-			tasksOrderSql = @"dueDate ASC";
+			tasksOrderSql = @"todos.dueDate ASC";
 			break;
 		default:
-			tasksOrderSql = @"dueDate DESC";
+			tasksOrderSql = @"todos.dueDate DESC";
 			break;
 	}
 	
@@ -413,7 +526,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	if (NSNumber* n = [self.plugin.preferences valueForKey:@"MaxTasks"])
 		queryLimit = n.intValue;
 
-	NSString* sql = [NSString stringWithFormat:@"%@ ORDER BY %@, createdDate DESC limit %i;", allSql, tasksOrderSql, queryLimit];
+	NSString* sql = [NSString stringWithFormat:@"%@ ORDER BY %@, todos.createdDate DESC limit %i;", allSql, tasksOrderSql, queryLimit];
 	
 	
 	NSLog(@"LI:Things: Executing SQL: %@", sql);
@@ -429,9 +542,9 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		self.sql = sql;
 
 		// Update data and read from database
-		NSMutableArray *todosDue = [NSMutableArray arrayWithCapacity:4];
-		NSMutableArray *todosToday = [NSMutableArray arrayWithCapacity:4];
-		NSMutableArray *todosNext = [NSMutableArray arrayWithCapacity:4];
+		NSMutableArray *todosDue = [NSMutableArray arrayWithCapacity:5];
+		NSMutableArray *todosToday = [NSMutableArray arrayWithCapacity:5];
+		NSMutableArray *todosNext = [NSMutableArray arrayWithCapacity:5];
 		
 		sqlite3 *database = NULL;
 		@try
@@ -460,8 +573,10 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 					double cDue  = sqlite3_column_double(compiledStatement, 1);
 					double createdDate  = sqlite3_column_double(compiledStatement, 2);
 					double flagged  = sqlite3_column_double(compiledStatement, 3);
+					const char *cProject  = (const char*)sqlite3_column_text(compiledStatement, 4);
 							
 					NSString *aText = [NSString stringWithUTF8String:(cText == NULL ? "" : cText)];
+					NSString *aProject = [NSString stringWithUTF8String:(cProject == NULL ? "" : cProject)];
 					//NSString *color = (cColor == NULL ? [self.todoPrefs objectForKey:@"UnfiledTaskListColor"] : [NSString stringWithUTF8String:cColor]);
 					//NSArray* colorComps = [color componentsSeparatedByString:@":"];
 										
@@ -470,6 +585,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 						[NSNumber numberWithDouble:cDue], @"due",
 						[NSNumber numberWithDouble:createdDate], @"createdDate", 
 						[NSNumber numberWithDouble:flagged], @"flagged", 
+						aProject, @"project",
 						nil];
 				
 					if (flagged == 1)
