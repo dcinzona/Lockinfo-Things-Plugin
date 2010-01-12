@@ -193,6 +193,18 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	
 	//Determine which subsection to show
 	
+	if (self.todoListToday.count > 0)
+		showTodoListToday = true;
+	
+	if (self.todoListDue.count > 0)
+		showTodoListDue = true;
+	
+	if (self.todoListNext.count > 0)
+		showTodoListNext = true;
+	
+	
+	//Determine which subsection to show
+	
 	if (showTodoListToday == false) {
 		todayRow = -1;
 	}
@@ -201,25 +213,21 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	}
 	
 	if (showTodoListDue == false) {
-		dueRow = -1;
+		dueRow = todayRow + self.todoListToday.count;
 	}
 	else {
-		dueRow = self.todoListToday.count+todayRow+1;
+		dueRow =  todayRow+self.todoListToday.count+1;
 	}
 	
 	if (showTodoListNext == false) {
 		nextRow = -1;
 	}
-	else if (showTodoListDue == true) {
-		nextRow = dueRow + self.todoListDue.count+1;
-	}
 	else {
-		nextRow = todayRow + self.todoListToday.count + dueRow + self.todoListDue.count+2;
+		nextRow = dueRow+self.todoListDue.count+1;
 	}
 
-	NSLog(@"LI:Things: subsection rows: Today: %i Due: %i Next: %i", todayRow, dueRow, nextRow);
 
-	if (row == todayRow || row == dueRow || row == nextRow) {
+	if ( (row == todayRow && showTodoListToday == true) ||  (row == dueRow && showTodoListDue == true) || (row == nextRow && showTodoListNext == true) ) {
 		return 20;	
 	}
 	else {
@@ -253,21 +261,21 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	}
 	
 	if (showTodoListDue == false) {
-		dueRow = -1;
+		dueRow = todayRow + self.todoListToday.count;
 	}
 	else {
-		dueRow = self.todoListToday.count+todayRow+1;
+		dueRow =  todayRow+self.todoListToday.count+1;
 	}
 	
 	if (showTodoListNext == false) {
 		nextRow = -1;
 	}
-	else if (showTodoListDue == true) {
-		nextRow = dueRow + self.todoListDue.count+1;
-	}
 	else {
-		nextRow = todayRow + self.todoListToday.count + dueRow + self.todoListDue.count+2;
-	}
+		nextRow = dueRow+self.todoListDue.count+1;
+	}	
+	
+	
+	NSLog(@"LI:Things: subsection rows: Today: %i Due: %i Next: %i", todayRow, dueRow, nextRow);
 	
 	
 	//Subsection Headers
@@ -294,13 +302,13 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		//Localize Subsection-Header Text
 		NSBundle* bundle = [NSBundle bundleForClass:[self class]];
 		
-		if (row == todayRow)
+		if (row == todayRow && showTodoListToday == true)
 			v.name.text = localize(bundle, @"Today");
 		
-		if (row == dueRow)
+		if (row == dueRow && showTodoListDue == true)
 			v.name.text = localize(bundle, @"Due");
 		
-		if (row == nextRow)
+		if (row == nextRow && showTodoListNext == true)
 			v.name.text = localize(bundle, @"Next");
 		
 		return cell;
@@ -325,18 +333,17 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	
 		NSDictionary *elem;
 				
-		if ( (todayRow != -1) && (row > todayRow) && (row < dueRow) ) {
+		if ( (showTodoListToday == true) && (row > todayRow) && (row <= todayRow + self.todoListToday.count) ) {
 			int rowdict = row-1;
 			elem = [self.todoListToday objectAtIndex:rowdict];
 		}
-
 		
-		if ( (dueRow != -1) && (row > dueRow) && (row < nextRow) ) {
+		if ( (showTodoListDue == true) && (row > dueRow) && (row <= dueRow + self.todoListDue.count) ) {
 			int rowdict = row-dueRow-1;
 			elem = [self.todoListDue objectAtIndex:rowdict];
 		}
 		
-		if ( (nextRow != -1) && (row > nextRow ) ) {
+		if ( (showTodoListNext == true) && (row > nextRow ) && (row <= nextRow + self.todoListNext.count) ) {
 			int rowdict = row-nextRow-1;
 			elem = [self.todoListNext objectAtIndex:rowdict];
 		}
@@ -451,7 +458,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 		
 	NSString *showNextTasks;
 	if (showNext == false) {
-		showNextTasks = @"AND (flagged = 1 OR dueDate IS NOT NULL)";
+		showNextTasks = @"AND (todos.flagged = 1 OR todos.dueDate IS NOT NULL)";
 	}
 	else {
 		showNextTasks = @"";
@@ -467,7 +474,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 	
 	NSString *showDueTasks;
 	if (showDue == true) {
-		showDueTasks = @"AND dueDate IS NOT NULL";
+		showDueTasks = @"AND todos.dueDate IS NOT NULL";
 	}
 	else {
 		showDueTasks = @"";
