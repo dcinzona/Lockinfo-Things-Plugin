@@ -406,8 +406,14 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 			v.dot.hidden = false;
 			[v.dot setNeedsDisplay];
 			NSString *dueDate = [df stringFromDate:date];
-			v.due.text = [project stringByAppendingString: @": "];
-			v.due.text = [v.due.text stringByAppendingString: dueDate];
+			if (([allTrim( project ) length] == 0 ) == false) {
+				v.due.text = [project stringByAppendingString: @": "];
+				v.due.text = [v.due.text stringByAppendingString: dueDate];
+			}
+			else {
+				v.due.text = dueDate;
+			}
+
 	}
 	
 	return cell;
