@@ -603,7 +603,7 @@ static ThingsViewHeader* createHeaderView(CGRect frame, LITableView* table)
 				
 					if (flagged == 1)
 						[todosToday addObject:todoDict];
-					if (cDue != 0)
+					if (cDue != 0 && flagged != 1)
 						[todosDue addObject:todoDict];
 					if (flagged != 1 && cDue == 0)
 						[todosNext addObject:todoDict];
